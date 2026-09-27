@@ -6,10 +6,10 @@
     <title>Birthday Invitation Generator</title>
     <!-- Mạng lưới CDN cho Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tải Font Parisienne từ Google Fonts -->
+    <!-- Tải Font Playwrite VN từ Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Parisienne&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playwrite+VN&display=swap" rel="stylesheet">
     
     <style>
         /* Đảm bảo body chiếm toàn bộ chiều cao */
@@ -17,9 +17,9 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6; /* bg-gray-100 */
         }
-        /* Áp dụng font Parisienne cho một số phần tử nếu cần thiết */
-        .font-parisienne {
-            font-family: 'Parisienne', cursive;
+        /* Áp dụng font Playwrite VN cho một số phần tử nếu cần thiết */
+        .font-playwrite {
+            font-family: 'Playwrite VN', cursive;
         }
     </style>
 </head>
@@ -36,7 +36,7 @@
             <div class="flex flex-col gap-2">
                 <label for="guestName" class="text-sm font-semibold text-gray-700">Tên Khách Mời:</label>
                 <input type="text" id="guestName" placeholder="Ví dụ: Anh Tuấn..." 
-                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-parisienne text-xl">
+                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-playwrite text-xl font-bold">
             </div>
 
             <!-- Tải ảnh lên dự phòng (Trong trường hợp Untitled-2.jpg không load được) -->
@@ -86,12 +86,13 @@
         let isImageLoaded = false;
         
         // Cấu hình vị trí và font chữ
-        // Điều chỉnh Y_OFFSET_PERCENTAGE để đưa text lên/xuống cho khớp đường chấm chấm
+        // Đã đổi Tên font sang Playwrite VN
         const CONFIG = {
-            FONT_FAMILY: "'Parisienne', cursive",
+            FONT_FAMILY: "'Playwrite VN', cursive",
+            FONT_WEIGHT: "bold",
             TEXT_COLOR: "#111827", // Màu đen đậm
-            Y_OFFSET_PERCENTAGE: 0.725, // ~72.5% chiều cao ảnh
-            BASE_FONT_SIZE: 65 // Kích thước pixel cơ sở khi ảnh full size
+            Y_OFFSET_PERCENTAGE: 0.758, // ~72.5% chiều cao ảnh
+            BASE_FONT_SIZE: 40 // Kích thước pixel cơ sở khi ảnh full size
         };
 
         // Hàm chính để vẽ lại toàn bộ canvas
@@ -114,11 +115,10 @@
             // 3. Vẽ chữ
             if (guestName) {
                 // Điều chỉnh cỡ chữ dựa trên kích thước ảnh gốc (để đảm bảo tỷ lệ)
-                // Giả sử ảnh thiết kế tiêu chuẩn có độ rộng ~1000px
                 const scaleFactor = canvas.width / 1000;
                 const fontSize = Math.floor(CONFIG.BASE_FONT_SIZE * scaleFactor);
 
-                ctx.font = `${fontSize}px ${CONFIG.FONT_FAMILY}`;
+                ctx.font = `${CONFIG.FONT_WEIGHT} ${fontSize}px ${CONFIG.FONT_FAMILY}`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = CONFIG.TEXT_COLOR;
@@ -192,7 +192,7 @@
             if (!isImageLoaded) return;
             
             try {
-                // Xuất ảnh ra Base64. (Dùng PNG để chất lượng cao nhất, hoặc JPEG với 0.9 quality)
+                // Xuất ảnh ra Base64
                 const dataURL = canvas.toDataURL('image/jpeg', 0.95);
                 
                 // Tạo thẻ <a> ẩn để kích hoạt tải xuống
