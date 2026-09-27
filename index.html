@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Invitation Generator</title>
+    <!-- Mạng lưới CDN cho Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải Font Parisienne từ Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Parisienne&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Đảm bảo body chiếm toàn bộ chiều cao */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+        /* Áp dụng font Parisienne cho một số phần tử nếu cần thiết */
+        .font-parisienne {
+            font-family: 'Parisienne', cursive;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- Bảng điều khiển (Control Panel) -->
+        <div class="w-full md:w-1/3 p-6 bg-gray-50 border-r border-gray-200 flex flex-col gap-6">
+            <h1 class="text-2xl font-bold text-gray-800">Tạo Thiệp Mời</h1>
+            <p class="text-sm text-gray-500">Nhập tên khách mời để tự động tạo thiệp. Bức ảnh gốc cần có tên là <code>Untitled-2.jpg</code> đặt cùng thư mục.</p>
+            
+            <!-- Đầu vào Tên khách mời -->
+            <div class="flex flex-col gap-2">
+                <label for="guestName" class="text-sm font-semibold text-gray-700">Tên Khách Mời:</label>
+                <input type="text" id="guestName" placeholder="Ví dụ: Anh Tuấn..." 
+                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-parisienne text-xl">
+            </div>
+
+            <!-- Tải ảnh lên dự phòng (Trong trường hợp Untitled-2.jpg không load được) -->
+            <div class="flex flex-col gap-2 pt-4 border-t border-gray-200">
+                <label for="imageUpload" class="text-sm font-semibold text-gray-700">Tải ảnh lên (Dự phòng):</label>
+                <input type="file" id="imageUpload" accept="image/*" 
+                       class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition">
+                <p class="text-xs text-gray-400">Sử dụng nút này nếu ảnh mặc định không hiển thị.</p>
+            </div>
+
+            <!-- Nút Tải xuống -->
+            <div class="mt-auto pt-6 flex flex-col gap-3">
+                <button id="downloadBtn" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Tải Ảnh Thiệp Mời
+                </button>
+            </div>
+        </div>
+
+        <!-- Khung xem trước (Preview Area) -->
+        <div class="w-full md:w-2/3 p-6 flex flex-col items-center justify-center bg-gray-100 min-h-[500px]">
+            <div class="relative w-full flex justify-center items-center">
+                <!-- Thẻ Canvas được giới hạn max-width để responsive -->
+                <canvas id="inviteCanvas" class="max-w-full max-h-[80vh] shadow-lg border border-gray-300 bg-white rounded"></canvas>
+                
+                <!-- Loading indicator -->
+                <div id="loadingIndicator" class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75 z-10">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-2"></div>
+                    <p class="text-sm text-gray-600 font-medium">Đang tải ảnh và font chữ...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('inviteCanvas');
+        const ctx = canvas.getContext('2d');
+        const nameInput = document.getElementById('guestName');
+        const imageUpload = document.getElementById('imageUpload');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        let bgImage = new Image();
+        let isImageLoaded = false;
+        
+        // Cấu hình vị trí và font chữ
+        // Điều chỉnh Y_OFFSET_PERCENTAGE để đưa text lên/xuống cho khớp đường chấm chấm
+        const CONFIG = {
+            FONT_FAMILY: "'Parisienne', cursive",
+            TEXT_COLOR: "#111827", // Màu đen đậm
+            Y_OFFSET_PERCENTAGE: 0.725, // ~72.5% chiều cao ảnh
+            BASE_FONT_SIZE: 65 // Kích thước pixel cơ sở khi ảnh full size
+        };
+
+        // Hàm chính để vẽ lại toàn bộ canvas
+        function drawCanvas() {
+            if (!isImageLoaded) return;
+
+            // Đặt kích thước canvas bằng với kích thước thật của ảnh để khi tải về không bị mờ
+            canvas.width = bgImage.width;
+            canvas.height = bgImage.height;
+
+            // Xóa canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Vẽ ảnh nền
+            ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+            // 2. Lấy tên người dùng nhập (hoặc để trống nếu chưa nhập)
+            const guestName = nameInput.value.trim();
+            
+            // 3. Vẽ chữ
+            if (guestName) {
+                // Điều chỉnh cỡ chữ dựa trên kích thước ảnh gốc (để đảm bảo tỷ lệ)
+                // Giả sử ảnh thiết kế tiêu chuẩn có độ rộng ~1000px
+                const scaleFactor = canvas.width / 1000;
+                const fontSize = Math.floor(CONFIG.BASE_FONT_SIZE * scaleFactor);
+
+                ctx.font = `${fontSize}px ${CONFIG.FONT_FAMILY}`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = CONFIG.TEXT_COLOR;
+                
+                // Hiệu ứng bóng đổ nhẹ cho chữ nổi bật hơn (tùy chọn)
+                ctx.shadowColor = "rgba(255, 255, 255, 0.7)";
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 1;
+                ctx.shadowOffsetY = 1;
+
+                // Tính toán tọa độ X, Y
+                const xPos = canvas.width / 2;
+                const yPos = canvas.height * CONFIG.Y_OFFSET_PERCENTAGE;
+
+                // Vẽ Text lên vị trí
+                ctx.fillText(guestName, xPos, yPos);
+                
+                // Reset shadow cho các lần vẽ sau
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        
+        // Hàm load ảnh
+        function loadImage(src) {
+            isImageLoaded = false;
+            loadingIndicator.style.display = 'flex';
+            downloadBtn.disabled = true;
+
+            bgImage.onload = () => {
+                isImageLoaded = true;
+                loadingIndicator.style.display = 'none';
+                downloadBtn.disabled = false;
+                drawCanvas();
+            };
+
+            bgImage.onerror = () => {
+                loadingIndicator.style.display = 'none';
+                console.error("Không thể tải ảnh:", src);
+                // Tạo một canvas trắng tạm thời nếu lỗi
+                canvas.width = 800;
+                canvas.height = 1131; // Tỉ lệ A4
+                ctx.fillStyle = '#f9fafb';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#9ca3af';
+                ctx.font = '20px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Vui lòng tải ảnh thư mời lên qua nút "Tải ảnh lên"', canvas.width/2, canvas.height/2);
+            }
+
+            bgImage.src = src;
+        }
+
+        // Lắng nghe sự kiện gõ phím để cập nhật text ngay lập tức
+        nameInput.addEventListener('input', drawCanvas);
+
+        // Lắng nghe tải ảnh thủ công (Dự phòng)
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    loadImage(event.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Xử lý nút Tải Xuống
+        downloadBtn.addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            
+            try {
+                // Xuất ảnh ra Base64. (Dùng PNG để chất lượng cao nhất, hoặc JPEG với 0.9 quality)
+                const dataURL = canvas.toDataURL('image/jpeg', 0.95);
+                
+                // Tạo thẻ <a> ẩn để kích hoạt tải xuống
+                const link = document.createElement('a');
+                link.download = nameInput.value.trim() 
+                                ? `Thiep-Moi-${nameInput.value.trim().replace(/\s+/g, '-')}.jpg` 
+                                : 'Thiep-Moi-Sinh-Nhat.jpg';
+                link.href = dataURL;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error("Lỗi khi tải ảnh:", error);
+                alert("Không thể tải ảnh. Có thể do lỗi Cross-Origin (CORS). Vui lòng đảm bảo ảnh và web ở cùng tên miền hoặc chạy trên localhost.");
+            }
+        });
+
+        // Khởi tạo: Đợi Font chữ được tải hoàn tất thì mới bắt đầu vẽ ảnh và text
+        window.onload = () => {
+            document.fonts.ready.then(() => {
+                // Cố gắng tải ảnh mặc định (Tệp nằm cùng thư mục)
+                loadImage('Untitled-2.jpg');
+            });
+        };
+    </script>
+</body>
+</html>
