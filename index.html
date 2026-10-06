@@ -34,7 +34,7 @@
         <!-- Bảng điều khiển (Control Panel) -->
         <div class="w-full md:w-1/3 p-6 bg-gray-50 border-r border-gray-200 flex flex-col gap-6">
             <h1 class="text-2xl font-bold text-gray-800">Tạo Thiệp Mời</h1>
-            <p class="text-sm text-gray-500">Nhập tên khách mời để tự động tạo thiệp. Bức ảnh gốc cần có tên là <code>Untitled-2.jpg</code> đặt cùng thư mục.</p>
+            <p class="text-sm text-gray-500">Nhập tên khách mời để tự động tạo thiệp. Bức ảnh gốc cần có tên là <code>Untitled-2.png</code> đặt cùng thư mục.</p>
             
             <div class="flex flex-col gap-2">
                 <label for="guestName" class="text-sm font-semibold text-gray-700">Tên Khách Mời:</label>
@@ -242,7 +242,7 @@
         window.onload = () => {
             document.fonts.ready.then(() => {
                 const timestamp = new Date().getTime();
-                loadImage('Untitled-2.jpg?v=' + timestamp);
+                loadImage('Untitled-2.png?v=' + timestamp);
             });
         };
     </script>
